@@ -6,7 +6,7 @@ PORT=3002
 
 app.use(express.json())
 
-app.use("/orders", orders)
+app.use("/", orders)
 
 app.listen(PORT, () =>{
     console.log(`http://localhost:${PORT}`)
