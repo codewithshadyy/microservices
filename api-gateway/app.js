@@ -2,14 +2,31 @@
 
 const express = require("express")
 const app = express()
-proxy = require("express-http-proxy")
+const proxy = require("express-http-proxy")
 
-PORT=3001
+const PORT=3001
 
 app.use(express.json())
 
-app.use("", proxy('http://localhost:3002'))
-app.use("/", proxy('http://localhost:3003'))
+
+app.get("/", (req, res) => {
+    res.json({
+        message: "API Gateway is working"
+    });
+});
+
+app.use(
+    "/orders",
+    proxy("http://localhost:3002", {
+        proxyReqPathResolver: (req) => req.originalUrl
+    })
+);
+
+app.use("/products", proxy('http://localhost:3003',
+    {
+        proxyReqPathResolver:(req) => req.originalUrl
+    }
+))
 
 app.listen(PORT, () =>{
     console.log(`http://localhost:${PORT}`)
