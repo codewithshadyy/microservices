@@ -9,6 +9,7 @@ PORT=3001
 app.use(express.json())
 
 app.use("", proxy('http://localhost:3002'))
+app.use("/", proxy('http://localhost:3003'))
 
 app.listen(PORT, () =>{
     console.log(`http://localhost:${PORT}`)
