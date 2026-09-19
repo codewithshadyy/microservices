@@ -72,7 +72,7 @@ app.post("/", async (req,res) => {
 
         return res.status(503).json({
             message: "Products service is unavailable"
-        });
+        });ccd 
         
     }
     
