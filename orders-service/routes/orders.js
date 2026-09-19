@@ -34,6 +34,33 @@ app.get("/see", async(req,res) => {
 })
 
 
+
+
+async function getProduct(productId) {
+    let attempts = 0;
+
+    while (attempts < 3) {
+        try {
+            return await axios.get(
+                `http://localhost:3003/products/${productId}`,
+                {
+                    timeout: 3000
+                }
+            );
+        } catch (error) {
+            attempts++;
+
+            console.log(`Product request failed. Attempt ${attempts}`);
+
+            if (attempts === 3) {
+                throw error;
+            }
+        }
+    }
+}
+
+
+
 app.post("/", async (req,res) => {
 
     try {
@@ -47,12 +74,8 @@ app.post("/", async (req,res) => {
             }
         );
 
-        const response = await axios.get(
-            `http://localhost:3003/products/${productId}`, {
-
-                timeout:3000
-            }
-        )
+        const response =  await getProduct(productId)
+        
          const customer = customerResponse.data
         const product = response.data
 

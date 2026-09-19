@@ -29,7 +29,7 @@ app.get("/", async (req,res) => {
 
 app.get("/:id", async (req,res) => {
 
-      
+      console.log("Products endpoint called")
 
     const product = products.find(
         product => product.id === parseInt(req.params.id)
