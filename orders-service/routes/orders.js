@@ -24,6 +24,10 @@ app.get("/see", async(req,res) => {
         })
         
     } catch (error) {
+
+        return res.json({
+            message:error.message
+        })
         
     }
 
