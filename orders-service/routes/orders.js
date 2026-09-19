@@ -38,15 +38,20 @@ app.post("/", async (req,res) => {
 
     try {
 
-        const  {productId, quantity} = req.body
+        const  {customerId, productId, quantity} = req.body
+
+         const customerResponse = await axios.get(
+            `http://localhost:3004/customers/${customerId}`
+        );
 
         const response = await axios.get(
             `http://localhost:3003/products/${productId}`
         )
-
+         const customer = customerResponse.data
         const product = response.data
 
         const order = {
+            customer:customer,
             productId: product.id,
             productName: product.name,
             price: product.price,

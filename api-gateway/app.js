@@ -28,6 +28,12 @@ app.use("/products", proxy('http://localhost:3003',
     }
 ))
 
+app.use("/customers", proxy('http://localhost:3004',
+    {
+        proxyReqPathResolver:(req) => req.originalUrl
+    }
+))
+
 app.listen(PORT, () =>{
     console.log(`http://localhost:${PORT}`)
 })
