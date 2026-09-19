@@ -41,11 +41,17 @@ app.post("/", async (req,res) => {
         const  {customerId, productId, quantity} = req.body
 
          const customerResponse = await axios.get(
-            `http://localhost:3004/customers/${customerId}`
+            `http://localhost:3004/customers/${customerId}`, {
+
+                timeout:3000
+            }
         );
 
         const response = await axios.get(
-            `http://localhost:3003/products/${productId}`
+            `http://localhost:3003/products/${productId}`, {
+
+                timeout:3000
+            }
         )
          const customer = customerResponse.data
         const product = response.data
@@ -69,15 +75,23 @@ app.post("/", async (req,res) => {
         
     } catch (error) {
 
-         if (error.response?.status === 404) {
-            return res.status(404).json({
-                message: "Product does not exist"
-            });
+        if(error.code === "ECONNABBORTED"){
+            return res.status(504).json({
+               message:  "A required service took too long to respond"
+            })
         }
+        
+
+        if (error.response) {
+        return res.status(error.response.status).json({
+            message: error.response.data.message
+        });
+    }
+
 
         return res.status(503).json({
             message: "Products service is unavailable"
-        });ccd 
+        });
         
     }
     
