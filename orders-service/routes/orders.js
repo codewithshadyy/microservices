@@ -2,7 +2,20 @@
 const express = require("express")
 const app = express.Router()
 const axios = require("axios")
+const circuitBreaker = require("../circuitBreaker")
 
+
+require("dotenv").config()
+
+const productBreaker = new circuitBreaker(
+
+     (productId) => axios.get(
+        `${process.env.PRODUCTS_SERVICE_URL}/products/${productId}`,
+        {
+            timeout: 3000
+        }
+    )
+)
 
 app.get("/", async (req,res) => {
 
@@ -74,10 +87,11 @@ app.post("/", async (req,res) => {
             }
         );
 
-        const response =  await getProduct(productId)
+        // const response =  await getProduct(productId)
+        const productResponse = await productBreaker.execute(productId); 
         
          const customer = customerResponse.data
-        const product = response.data
+        const product = productResponse.data
 
         const order = {
             customer:customer,
