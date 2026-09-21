@@ -42,7 +42,7 @@ async function getProduct(productId) {
     while (attempts < 3) {
         try {
             return await axios.get(
-                `http://localhost:3003/products/${productId}`,
+                `${process.env.PRODUCT_SERVICE_URL}/products/${productId}`,
                 {
                     timeout: 3000
                 }
@@ -68,7 +68,7 @@ app.post("/", async (req,res) => {
         const  {customerId, productId, quantity} = req.body
 
          const customerResponse = await axios.get(
-            `http://localhost:3004/customers/${customerId}`, {
+            `${process.env.CUSTOMER_SERVICE_URL}/customers/${customerId}`, {
 
                 timeout:3000
             }

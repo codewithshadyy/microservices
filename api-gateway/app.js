@@ -7,6 +7,7 @@ const proxy = require("express-http-proxy")
 const PORT=3001
 
 app.use(express.json())
+require("dotenv").config()
 
 
 app.get("/", (req, res) => {
@@ -17,7 +18,7 @@ app.get("/", (req, res) => {
 
 app.use(
     "/orders",
-    proxy("http://localhost:3002", {
+    proxy(process.env.ORDER_SERVICE_URL, {
         proxyReqPathResolver: (req) => req.originalUrl
     })
 );
