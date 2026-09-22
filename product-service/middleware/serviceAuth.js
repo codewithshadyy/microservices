@@ -11,7 +11,7 @@ exports.serviceauth = (req,res, next) => {
         })
     }
 
-    if(serviceKey !== process.env.SERVICE_SECRET){
+    if(serviceKey !== process.env.PRODUCTS_SERVICE_KEY){
         return res.status(403).json({
             message:"Invalide service credentials"
         })
