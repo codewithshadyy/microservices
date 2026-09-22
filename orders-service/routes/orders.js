@@ -16,7 +16,13 @@ const productBreaker = new circuitBreaker(
      (productId) => axios.get(
         `${process.env.PRODUCT_SERVICE_URL}/products/${productId}`,
         {
-            timeout: 3000
+            timeout: 3000,
+
+
+             headers: {
+                "X-Service-Key": process.env.PRODUCTS_SERVICE_KEY
+            }
+            
         }
     )
 )
