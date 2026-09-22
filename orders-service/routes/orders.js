@@ -7,6 +7,10 @@ const circuitBreaker = require("../circuitBreaker")
 
 require("dotenv").config()
 
+
+
+const processedRequests = new Map()
+
 const productBreaker = new circuitBreaker(
 
      (productId) => axios.get(
@@ -80,12 +84,36 @@ app.post("/", async (req,res) => {
 
         const  {customerId, productId, quantity} = req.body
 
+
+
+
+         const idempotencyKey = req.headers["idempotency-key"]
+
+        if(!idempotencyKey){
+            return res.status(400).json({
+                message: "Idempotency-Key header is required"
+
+            })
+        }
+
+        if (processedRequests.has(idempotencyKey)) {
+              console.log("Duplicate request detected:", idempotencyKey);
+    return res.status(200).json({
+        message: "Request already processed",
+        order: processedRequests.get(idempotencyKey)
+    });
+}
+
+
+        
+
          const customerResponse = await axios.get(
             `${process.env.CUSTOMER_SERVICE_URL}/customers/${customerId}`, {
 
                 timeout:3000
             }
         );
+    
 
         // const response =  await getProduct(productId)
         const productResponse = await productBreaker.execute(productId); 
@@ -93,6 +121,7 @@ app.post("/", async (req,res) => {
          const customer = customerResponse.data
         const product = productResponse.data
 
+       
         const order = {
             customer:customer,
             productId: product.id,
@@ -101,6 +130,12 @@ app.post("/", async (req,res) => {
             quantity: quantity,
             total: product.price * quantity
         };
+
+        
+
+processedRequests.set(idempotencyKey, order);
+
+  console.log("New order created:", idempotencyKey);
 
 
 
