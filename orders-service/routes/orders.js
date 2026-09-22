@@ -10,7 +10,7 @@ require("dotenv").config()
 const productBreaker = new circuitBreaker(
 
      (productId) => axios.get(
-        `${process.env.PRODUCTS_SERVICE_URL}/products/${productId}`,
+        `${process.env.PRODUCT_SERVICE_URL}/products/${productId}`,
         {
             timeout: 3000
         }
