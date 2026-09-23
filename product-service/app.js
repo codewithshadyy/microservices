@@ -19,6 +19,19 @@ app.get("/health", (req, res) => {
     });
 });
 
+app.get("/health/live", (req, res) => {
+    return res.status(200).json({
+        status: "alive",
+        service: "products"
+    });
+});
+
+app.get("/health/ready", (req, res) => {
+    return res.status(200).json({
+        status: "ready",
+        service: "products"
+    });
+});
 
 app.listen(PORT, () =>{
     console.log(`http://localhost:${PORT}`)
