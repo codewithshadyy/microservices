@@ -9,7 +9,12 @@ app.use(express.json())
 
 app.use("/customers", customers)
 
-
+app.get("/health", (req, res) => {
+    return res.status(200).json({
+        status: "ok",
+        service: "customers"
+    });
+});
 
 
 app.listen(PORT, () => {

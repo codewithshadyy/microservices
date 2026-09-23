@@ -11,6 +11,8 @@ app.use(express.json())
 require("dotenv").config()
 
 
+
+
 app.get("/", (req, res) => {
     res.json({
         message: "API Gateway is working"
