@@ -5,6 +5,8 @@ const app = express()
 const proxy = require("express-http-proxy")
 const {auth} = require("./middlewares/auth")
 
+const getNextProductService  = require("./services/products")
+
 const PORT=3001
 
 app.use(express.json())
@@ -26,7 +28,11 @@ app.use(
     })
 );
 
-app.use("/products",auth, proxy('http://localhost:3003',
+
+
+
+
+app.use("/products",auth, proxy((req) => getNextProductService(),
     {
         proxyReqPathResolver:(req) => req.originalUrl,
 
@@ -46,11 +52,17 @@ app.use("/products",auth, proxy('http://localhost:3003',
 
     ))
 
+
+
+
 app.use("/customers", auth, proxy('http://localhost:3004',
     {
         proxyReqPathResolver:(req) => req.originalUrl
     }
 ))
+
+
+
 
 app.listen(PORT, () =>{
     console.log(`http://localhost:${PORT}`)

@@ -5,7 +5,7 @@ const express = require("express")
 const app = express()
 const products = require("./routes/products")
 const {serviceauth} = require("./middleware/serviceAuth")
-const PORT=3003
+const PORT=process.env.PORT || 3003
 
 
 app.use(express.json())
