@@ -32,25 +32,32 @@ app.use(
 
 
 
-app.use("/products",auth, proxy((req) => getNextProductService(),
-    {
-        proxyReqPathResolver:(req) => req.originalUrl,
+app.use("/products", auth, async (req, res, next) => {
 
-           proxyReqOptDecorator: (proxyReqOpts) => {
-            proxyReqOpts.headers["X-Service-Key"] =
-                process.env.PRODUCTS_SERVICE_KEY;
+    try {
 
-            return proxyReqOpts;
-        }
-        
-    },
+        const service = await getNextProductService();
 
-    
+        console.log("Forwarding request to:", service);
 
+        proxy(service, {
+            proxyReqPathResolver: (req) => req.originalUrl,
 
+            proxyReqOptDecorator: (proxyReqOpts) => {
+                proxyReqOpts.headers["X-Service-Key"] =
+                    process.env.PRODUCTS_SERVICE_KEY;
 
+                return proxyReqOpts;
+            }
+        })(req, res, next);
 
-    ))
+    } catch (error) {
+
+        return res.status(503).json({
+            message: "No product service is available"
+        });
+    }
+})
 
 
 

@@ -1,4 +1,6 @@
 
+const axios = require("axios")
+
 const products = [
     "http://localhost:3003",
     "http://localhost:3005"
@@ -6,17 +8,40 @@ const products = [
 
 let currentIndex = 0
 
-function getNextProduct() {
+async function getNextProduct() {
     
-    service = products[currentIndex]
 
-    currentIndex = (currentIndex + 1 ) % products.length
+    for (let i = 0; products.length; i++){
+
+        const service = products[currentIndex]
+
+        currentIndex = (currentIndex + 1) % products.length
 
 
 
-    console.log("Routing to:", service)
+        try {
 
-    return service
+
+
+            await axios.get(`${service}/health/live`, {
+
+                timeout:1000
+            })
+
+            console.log("Healthy product service:", service)
+
+            return service
+            
+        } catch (error) {
+
+            console.log("Unhealthy product service:", service)
+
+            
+        }
+
+    }
+
+    throw new Error("No product service is available")
 
 
 }
