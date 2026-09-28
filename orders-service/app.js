@@ -1,4 +1,6 @@
 
+
+const {connectRabbitMQ} = require("./messaging/rabbitmq")
 const express = require("express")
 const app = express()
 const orders = require("./routes/orders")
@@ -76,7 +78,17 @@ app.get("/health/ready", async(req, res) => {
     }
 });
 
+connectRabbitMQ()
+.then(
+    () => {
 
-app.listen(PORT, () =>{
+        app.listen(PORT, () =>{
     console.log(`http://localhost:${PORT}`)
+})
+
+    }
+)
+.catch((error) =>{
+      console.error("Failed to connect to RabbitMQ:", error);
+    process.exit(1)
 })

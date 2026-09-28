@@ -15,15 +15,15 @@ async function connectRabbitMQ() {
 
 function getChannel() {
     if (!channel) {
-        throw new Error("RabbitMQ channel not initialized");
+        throw new Error("RabbitMQ channel not initialized")
     }
 
-    return channel;
+    return channel
 }
 
 module.exports = {
     connectRabbitMQ,
     getChannel
-};
+}
 
 

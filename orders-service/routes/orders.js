@@ -5,6 +5,7 @@ const axios = require("axios")
 const pool  = require("../db")
 const circuitBreaker = require("../circuitBreaker")
 const eventBus = require("../events/eventBus")
+const publishOrderCreated = require("../messaging/publisher")
 
 
 require("dotenv").config()
@@ -160,12 +161,12 @@ app.post("/", async (req,res) => {
        const order = result.rows[0]
 
 
-     eventBus.emit("order.created", {
+ await publishOrderCreated({
     orderId: order.id,
     customerId: order.customer_id,
     productId: order.product_id,
     total: order.total
-});
+})
 
         
 
