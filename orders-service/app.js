@@ -5,6 +5,8 @@ const orders = require("./routes/orders")
 const PORT=3002
 const axios = require("axios")
 
+require("./events/orderCreatedListener");
+
 app.use(express.json())
 
 app.use("/orders", orders)
