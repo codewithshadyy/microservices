@@ -1,6 +1,7 @@
 
 
 const {connectRabbitMQ} = require("./messaging/rabbitmq")
+const setUpOrderQueue = require("./messaging/queue")
 const express = require("express")
 const app = express()
 const orders = require("./routes/orders")
@@ -80,7 +81,9 @@ app.get("/health/ready", async(req, res) => {
 
 connectRabbitMQ()
 .then(
-    () => {
+   async () => {
+
+        await setUpOrderQueue()
 
         app.listen(PORT, () =>{
     console.log(`http://localhost:${PORT}`)
