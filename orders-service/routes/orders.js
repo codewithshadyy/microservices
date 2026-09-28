@@ -2,6 +2,7 @@
 const express = require("express")
 const app = express.Router()
 const axios = require("axios")
+const pool  = require("../db")
 const circuitBreaker = require("../circuitBreaker")
 
 
@@ -130,15 +131,32 @@ app.post("/", async (req,res) => {
          const customer = customerResponse.data
         const product = productResponse.data
 
-       
-        const order = {
-            customer:customer,
-            productId: product.id,
-            productName: product.name,
-            price: product.price,
-            quantity: quantity,
-            total: product.price * quantity
-        };
+        const total = product.price * quantity
+
+       const result =  await pool.query(
+        
+        `
+        INSERT INTO orders
+        (customer_id, product_id, product_name, unit_price, quantity, total)
+        VALUES($1, $2, $3, $4, $5, $6)
+
+        RETURNING *
+        
+        `,
+        [
+        customer.id,
+        product.id,
+        product.name,
+        product.price,
+        quantity,
+        total
+        ]
+
+
+
+       )
+
+       const order = result.rows[0]
 
         
 
@@ -169,7 +187,7 @@ processedRequests.set(idempotencyKey, order);
         });
     }
 
-
+console.log(error)
         return res.status(503).json({
             message: "Products service is unavailable"
         });
