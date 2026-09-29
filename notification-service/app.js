@@ -32,8 +32,8 @@ async function start() {
     )
 
     console.log("notifications service waiting for orders.....")
-
-    channel.consume(QUEUE, (message) => {
+    channel.prefetch(1) 
+    channel.consume(QUEUE, async(message) => {
         if(!message){
             return
         }
@@ -47,6 +47,8 @@ try {
     console.log("Processing order:", order)
 
     console.log(`Sending nots for: ${order.orderId}`)
+
+    await new Promise(resolve => setTimeout(resolve,5000))
 
     channel.ack(message)
     
