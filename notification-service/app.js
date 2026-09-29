@@ -8,7 +8,7 @@ const QUEUE = "orders.created.queue"
 const ROUTING_KEY = "order.created"
 
 
-async function start(params) {
+async function start() {
 
     const connection  = await amplib.connect(RABBITMQ_URL)
 
@@ -38,18 +38,33 @@ async function start(params) {
             return
         }
 
+try {
+
+    const order = JSON.parse(
+        message.content.toString()
+    )
+
+    console.log("Processing order:", order)
+
+    console.log(`Sending nots for: ${order.orderId}`)
+
+    channel.ack(message)
+    
+} catch (error) {
+    console.error("Error failed to process the message:", error.message)
+
+    channel.nack(
+        message,
+        false,
+        true
+    )
 
 
-        const order = JSON.parse(
-            message.content.toString()
-        )
 
-        console.log("order event received")
-
-        console.log(order)
-
-        channel.ack(message)
-    })
+    
+}
+      
+    }, {noAck:false})
 }
 
 start().catch((error) => {
