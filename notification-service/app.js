@@ -44,9 +44,9 @@ try {
         message.content.toString()
     )
 
-    console.log("Processing order:", order)
+    console.log(`[${process.env.INSTANCE}] Processing order`, order)
 
-    console.log(`Sending nots for: ${order.orderId}`)
+    console.log(`[${process.env.INSTANCE}] Sending notifications  for: ${order.orderId}`)
 
     await new Promise(resolve => setTimeout(resolve,5000))
 
