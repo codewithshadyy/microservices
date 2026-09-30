@@ -2,6 +2,9 @@
 
 const amplib = require("amqplib")
 
+
+const DLX = "orders.dlx"
+const DLQ = "orders.failed.queue"
 const RABBITMQ_URL = process.env.RABBITMQ_URL
 const EXCHANGE = "orders.exchange"
 const QUEUE = "orders.created.queue"
@@ -20,10 +23,25 @@ async function start() {
         durable:true
     })
     
-    channel.assertQueue(QUEUE, {
+    channel.assertExchange(DLX, "direct", {
+        durable:true    
+    })
+
+    channel.assertQueue(DLQ, {
         durable:true
     })
 
+    await channel.assertQueue(
+        DLQ,
+        DLX,
+        "order.failed"
+    )
+
+    await channel.assertQueue(QUEUE, {
+        durable:true,
+        deadLetterExchange:DLX,
+        deadLetterRoutingKey:"order.failed"
+    })
 
     await channel.bindQueue(
         QUEUE,
@@ -50,6 +68,8 @@ try {
 
     await new Promise(resolve => setTimeout(resolve,5000))
 
+
+
     channel.ack(message)
     
 } catch (error) {
@@ -58,7 +78,7 @@ try {
     channel.nack(
         message,
         false,
-        true
+        false
     )
 
 

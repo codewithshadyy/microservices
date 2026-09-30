@@ -1,8 +1,12 @@
 const { getChannel } = require("./rabbitmq")
 
 const EXCHANGE = "orders.exchange"
-const QUEUE = "order.created.queue"
+const QUEUE = "orders.created.queue"
 const ROUTING_KEY = "order.created"
+
+const DLQ = "orders.failed.queue"
+const DLX = "orders.dlx"
+const DLQ_ROUTING_KEY = "order.failed"
 
 async function setupOrderQueue() {
     const channel = getChannel()
@@ -11,8 +15,24 @@ async function setupOrderQueue() {
         durable: true
     })
 
-    await channel.assertQueue(QUEUE, {
+    await channel.assertExchange(DLX,"direct", {
         durable: true
+    })
+       await channel.assertQueue(DLQ, {
+        durable: true
+    })
+
+
+     await channel.bindQueue(
+        DLQ,
+        DLX,
+        DLQ_ROUTING_KEY
+    )
+
+     await channel.assertQueue(QUEUE, {
+        durable: true,
+        deadLetterExchange: DLX,
+        deadLetterRoutingKey: DLQ_ROUTING_KEY
     })
 
     await channel.bindQueue(
