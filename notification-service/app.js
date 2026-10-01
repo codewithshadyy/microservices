@@ -1,7 +1,7 @@
 
 
 const amplib = require("amqplib")
-
+require("dotenv").config()
 
 const DLX = "orders.dlx"
 const DLQ = "orders.failed.queue"
@@ -9,6 +9,10 @@ const RABBITMQ_URL = process.env.RABBITMQ_URL
 const EXCHANGE = "orders.exchange"
 const QUEUE = "orders.created.queue"
 const ROUTING_KEY = "order.created"
+
+const RETRY_EXCHANGE = "orders.retry.exchange";
+const RETRY_QUEUE = "orders.retry.queue";
+const RETRY_ROUTING_KEY = "order.retry";
 
 
 async function start() {
@@ -27,6 +31,11 @@ async function start() {
         durable:true    
     })
 
+    await channel.assertExchange(RETRY_EXCHANGE, "direct", {
+    durable: true
+})
+
+
     channel.assertQueue(DLQ, {
         durable:true
     })
@@ -40,7 +49,8 @@ async function start() {
     await channel.assertQueue(QUEUE, {
         durable:true,
         deadLetterExchange:DLX,
-        deadLetterRoutingKey:"order.failed"
+        deadLetterRoutingKey:"order.failed",
+       
     })
 
     await channel.bindQueue(
@@ -48,6 +58,24 @@ async function start() {
         EXCHANGE,
         ROUTING_KEY
     )
+
+await channel.assertQueue(RETRY_QUEUE, {
+    durable: true,
+    deadLetterExchange: EXCHANGE,
+    deadLetterRoutingKey: ROUTING_KEY,
+    messageTtl: 1000
+});
+
+await channel.bindQueue(
+    RETRY_QUEUE,
+    RETRY_EXCHANGE,
+    RETRY_ROUTING_KEY
+)
+
+
+
+
+
 
     console.log("notifications service waiting for orders.....")
     channel.prefetch(1) 
@@ -83,8 +111,9 @@ try {
     if(retryCount < 2){
         const nextRetryCount = retryCount + 1
 
-        channel.sendToQueue(
-            QUEUE,
+        channel.publish(
+            RETRY_EXCHANGE,
+            RETRY_ROUTING_KEY,
             message.content,
             {
 
