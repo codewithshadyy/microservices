@@ -11,7 +11,9 @@ const QUEUE = "orders.created.queue"
 const ROUTING_KEY = "order.created"
 
 const RETRY_EXCHANGE = "orders.retry.exchange";
-const RETRY_QUEUE = "orders.retry.queue";
+const RETRY_QUEUE_1 = "orders.retry.1.queue";
+const RETRY_QUEUE_2 = "orders.retry.2.queue";
+const RETRY_QUEUE_3 = "orders.retry.3.queue";
 const RETRY_ROUTING_KEY = "order.retry";
 
 
@@ -59,18 +61,47 @@ async function start() {
         ROUTING_KEY
     )
 
-await channel.assertQueue(RETRY_QUEUE, {
+await channel.assertQueue(RETRY_QUEUE_1, {
     durable: true,
     deadLetterExchange: EXCHANGE,
     deadLetterRoutingKey: ROUTING_KEY,
     messageTtl: 1000
 });
 
+
+await channel.assertQueue(RETRY_QUEUE_2, {
+    durable: true,
+    messageTtl: 2000,
+    deadLetterExchange: EXCHANGE,
+    deadLetterRoutingKey: ROUTING_KEY
+});
+
+await channel.assertQueue(RETRY_QUEUE_3, {
+    durable: true,
+    messageTtl: 4000,
+    deadLetterExchange: EXCHANGE,
+    deadLetterRoutingKey: ROUTING_KEY
+});
+
 await channel.bindQueue(
-    RETRY_QUEUE,
+    RETRY_QUEUE_1,
     RETRY_EXCHANGE,
-    RETRY_ROUTING_KEY
+    "retry.1"
 )
+
+
+
+await channel.bindQueue(
+    RETRY_QUEUE_2,
+    RETRY_EXCHANGE,
+    "retry.2"
+);
+
+await channel.bindQueue(
+    RETRY_QUEUE_3,
+    RETRY_EXCHANGE,
+    "retry.3"
+);
 
 
 
@@ -111,9 +142,11 @@ try {
     if(retryCount < 2){
         const nextRetryCount = retryCount + 1
 
+         const retryRoutingKey = `retry.${nextRetryCount}`
+
         channel.publish(
             RETRY_EXCHANGE,
-            RETRY_ROUTING_KEY,
+            retryRoutingKey,
             message.content,
             {
 
