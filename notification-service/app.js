@@ -127,10 +127,10 @@ try {
 
     await new Promise(resolve => setTimeout(resolve,5000))
 
-   throw new Error("Testing Retry");
+//    throw new Error("Testing Retry");
    
 
-    // channel.ack(message)
+    channel.ack(message)
     
 } catch (error) {
 

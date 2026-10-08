@@ -8,7 +8,7 @@ async function publishOrderCreated(order) {
     const channel = getChannel()
 
     await channel.assertExchange(EXCHANGE, 'direct', {
-        burable:true
+        durable:true
     })
 
     const message = Buffer.from(JSON.stringify(order))
@@ -19,6 +19,15 @@ async function publishOrderCreated(order) {
         message,
         {
             persistent:true
+        },
+        (err, ok) => {
+
+        if (err) {
+                 console.log("Publish failed");
+          } else {
+                console.log("RabbitMQ confirmed message");
+       }
+       
         }
     )
 
