@@ -50,7 +50,8 @@ try {
 
     if(cacheProduct){
         console.log("Cache hit", cacheKey)
-        res.status(200).json({
+
+       return res.status(200).json({
             source:'redis',
             product:JSON.parse(cacheProduct)
         })
@@ -96,6 +97,64 @@ try {
 }
 
 
+})
+
+
+app.put("/:id", async (req,res) => {
+
+
+
+      const productId = req.params.id
+
+        const {name, price } = req.body
+
+        const cacheKey = `product:${productId}`
+
+        if (name === undefined || price === undefined) {
+        return res.status(400).json({
+            message: "Name and price are required"
+        });
+    }
+
+
+
+
+    try {
+
+        const queryText = `UPDATE product SET name = $1, price=$2 WHERE id = $3 RETURNING*`
+        const inputFields = [name, price, productId]
+
+        const result  = await pool.query(queryText, inputFields)
+
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: "Product not found"
+            });
+        }
+
+        const updatedProduct = result.rows[0]
+        await redisClient.del(cacheKey)
+
+         console.log("CACHE INVALIDATED:", cacheKey)
+
+           return res.status(200).json({
+            message: "Product updated successfully",
+            data: updatedProduct
+        })
+
+
+      
+        
+    } catch (error) {
+
+        return res.status(500).json({
+            message:"error updating the product",
+            error
+        })
+        
+    }
+    
 })
 
 
