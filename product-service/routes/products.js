@@ -35,6 +35,42 @@ try {
 })
 
 
+app.post("/", async (req, res) => {
+
+    try {
+
+        const {name, price} = req.body
+
+        if(!name || !price){
+            return res.status(400).json({
+                message:"Name and price are required"
+            })
+        }
+
+        const queryText = `INSERT INTO product(name, price) VALUES(\$1, \$2)  RETURNING *`
+        const inputFields = [name, price]
+
+        const result = await pool.query(queryText, inputFields)
+
+        return res.status(200).json({
+            message:"product created successfully",
+            data:result.rows
+        })
+
+
+        
+    } catch (error) {
+        return res.status(500).json({
+            message:"error creating poroduct"
+        })
+        
+    }
+
+    
+}
+)
+
+
 
 app.get("/:id", async (req,res) => {
 
