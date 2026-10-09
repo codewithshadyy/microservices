@@ -5,6 +5,7 @@ const express = require("express")
 const app = express()
 const products = require("./routes/products")
 const {serviceauth} = require("./middleware/serviceAuth")
+const {connectRedis} = require("./config/redis")
 const PORT=process.env.PORT || 3003
 
 
@@ -33,6 +34,19 @@ app.get("/health/ready", (req, res) => {
     });
 });
 
-app.listen(PORT, () =>{
+
+
+async function startServer() {
+    await connectRedis()
+
+    app.listen(PORT, () =>{
     console.log(`http://localhost:${PORT}`)
 })
+    
+}
+
+startServer().catch((error) => {
+    console.error("Failed to start Products Service:", error)
+    process.exit(1)
+})
+
