@@ -72,68 +72,77 @@ app.post("/", async (req, res) => {
 
 
 
-app.get("/:id", async (req,res) => {
 
-      console.log("Products endpoint called")
+app.get("/:id", async (req, res) => {
+    const productId = req.params.id;
+    const cacheKey = `product:${productId}`;
 
-      const productId = req.params.id
-      const cacheKey = `product:${productId}`
+    let cachedProduct = null;
 
-  
-try {
-
-    const cacheProduct = await redisClient.get(cacheKey)
-
-    if(cacheProduct){
-        console.log("Cache hit", cacheKey)
-
-       return res.status(200).json({
-            source:'redis',
-            product:JSON.parse(cacheProduct)
-        })
+    // 1. Try Redis, but don't let cache failure stop the request
+    try {
+        cachedProduct = await redisClient.get(cacheKey);
+    } catch (error) {
+        console.error("Redis read failed:", error.message);
     }
-    console.log("CACHE MISS:", cacheKey)
 
-    const result = await pool.query(
-        "SELECT * FROM  product WHERE id = $1",
-        [productId]
-    )
+    if (cachedProduct) {
+        console.log("CACHE HIT:", cacheKey);
 
-    if(result.rows.length === 0){
+        return res.status(200).json({
+            source: "redis",
+            data: JSON.parse(cachedProduct)
+        });
+    }
 
-        return res.status(404).json({
+    console.log(
+        cachedProduct === null
+            ? "CACHE MISS:" + cacheKey
+            : "CACHE UNAVAILABLE: using PostgreSQL"
+    );
+
+    // 2. PostgreSQL remains the source of truth
+    try {
+        const result = await pool.query(
+            "SELECT * FROM product WHERE id = $1",
+            [productId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
                 message: "Product not found"
-            })
-    }
-    const product   =  result.rows[0]
-
-    await redisClient.set(
-        cacheKey,
-        JSON.stringify(product),
-        {
-            EX:60
+            });
         }
-      
-    )
 
-    console.log("Database hit", productId)
-      return res.status(200).json({
-        source:"postgresql",
-        data:product
-      })
-    
-} catch (error) {
+        const product = result.rows[0];
 
-      console.error("Database error:", error);
+        // 3. Best-effort cache write
+        try {
+            await redisClient.set(
+                cacheKey,
+                JSON.stringify(product),
+                { EX: 60 }
+            );
+        } catch (error) {
+            console.error("Redis write failed:", error.message);
+        }
+
+        console.log("DATABASE HIT:", productId);
+
+        return res.status(200).json({
+            source: "postgresql",
+            data: product
+        });
+
+    } catch (error) {
+        console.error("Database error:", error.message);
 
         return res.status(500).json({
             message: "Failed to fetch product"
-        })
-    
-}
+        });
+    }
+});
 
-
-})
 
 
 app.put("/:id", async (req,res) => {
