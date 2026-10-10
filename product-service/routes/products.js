@@ -7,6 +7,9 @@ const pool = require("../config/db")
 const {redisClient} = require("../config/redis")
 
 
+const inFlightRequests = new Map()
+
+
 
 
 
@@ -101,46 +104,77 @@ app.get("/:id", async (req, res) => {
             : "CACHE UNAVAILABLE: using PostgreSQL"
     );
 
-    // 2. PostgreSQL remains the source of truth
-    try {
-        const result = await pool.query(
-            "SELECT * FROM product WHERE id = $1",
-            [productId]
-        );
+    
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                message: "Product not found"
-            });
-        }
 
-        const product = result.rows[0];
+   
 
-        // 3. Best-effort cache write
+    
+
+let productPromise = inFlightRequests.get(cacheKey);
+
+if (!productPromise) {
+    productPromise = (async () => {
         try {
-            await redisClient.set(
-                cacheKey,
-                JSON.stringify(product),
-                { EX: 60 }
+            // Recheck Redis in case another request populated it
+            const cachedAgain = await redisClient.get(cacheKey);
+
+            if (cachedAgain) {
+                console.log("CACHE HIT AFTER WAIT:", cacheKey);
+                return JSON.parse(cachedAgain);
+            }
+
+            console.log("DATABASE HIT:", productId);
+
+            const result = await pool.query(
+                "SELECT * FROM product WHERE id = $1",
+                [productId]
             );
-        } catch (error) {
-            console.error("Redis write failed:", error.message);
+
+            if (result.rows.length === 0) {
+                return null;
+            }
+
+            const product = result.rows[0];
+
+            try {
+                await redisClient.set(
+                    cacheKey,
+                    JSON.stringify(product),
+                    { EX: 60 }
+                );
+            } catch (error) {
+                console.error("Redis write failed:", error.message);
+            }
+
+            return product;
+        } finally {
+            inFlightRequests.delete(cacheKey);
         }
+    })();
 
-        console.log("DATABASE HIT:", productId);
+    inFlightRequests.set(cacheKey, productPromise);
+} else {
+    console.log("JOINING IN-FLIGHT REQUEST:", cacheKey);
+}
 
-        return res.status(200).json({
-            source: "postgresql",
-            data: product
-        });
+const product = await productPromise;
 
-    } catch (error) {
-        console.error("Database error:", error.message);
+if (!product) {
+    return res.status(404).json({
+        message: "Product not found"
+    });
+}
 
-        return res.status(500).json({
-            message: "Failed to fetch product"
-        });
-    }
+return res.status(200).json({
+    source: "postgresql",
+    data: product
+});
+
+
+
+
+
 });
 
 
