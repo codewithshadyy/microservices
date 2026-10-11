@@ -76,105 +76,115 @@ app.post("/", async (req, res) => {
 
 
 
+
 app.get("/:id", async (req, res) => {
     const productId = req.params.id;
     const cacheKey = `product:${productId}`;
 
-    let cachedProduct = null;
+    // 1. Try Redis only when the client is ready.
+    if (redisClient.isReady) {
+        try {
+            const cachedProduct = await redisClient.get(cacheKey);
 
-    // 1. Try Redis, but don't let cache failure stop the request
-    try {
-        cachedProduct = await redisClient.get(cacheKey);
-    } catch (error) {
-        console.error("Redis read failed:", error.message);
+            if (cachedProduct) {
+                console.log("CACHE HIT:", cacheKey);
+
+                return res.status(200).json({
+                    source: "redis",
+                    data: JSON.parse(cachedProduct)
+                });
+            }
+
+            console.log("CACHE MISS:", cacheKey);
+        } catch (error) {
+            console.error("Redis read failed:");
+        }
+    } else {
+        console.log("Redis unavailable: using PostgreSQL");
     }
 
-    if (cachedProduct) {
-        console.log("CACHE HIT:", cacheKey);
+    // 2. Share an in-flight database lookup.
+    let productPromise = inFlightRequests.get(cacheKey);
+
+    if (!productPromise) {
+        productPromise = (async () => {
+            try {
+                // Recheck Redis, but never let this read block the DB fallback.
+                if (redisClient.isReady) {
+                    try {
+                        const cachedAgain = await redisClient.get(cacheKey);
+
+                        if (cachedAgain) {
+                            console.log("CACHE HIT AFTER WAIT:", cacheKey);
+                            return JSON.parse(cachedAgain);
+                        }
+                    } catch (error) {
+                        console.error(
+                            "Redis recheck failed:",
+                        );
+                    }
+                }
+
+                console.log("DATABASE HIT:", productId);
+
+                const result = await pool.query(
+                    "SELECT * FROM product WHERE id = $1",
+                    [productId]
+                );
+
+                if (result.rows.length === 0) {
+                    return null;
+                }
+
+                const product = result.rows[0];
+
+                // 3. Cache is optional; the DB result is what we return.
+                if (redisClient.isReady) {
+                    try {
+                        await redisClient.set(
+                            cacheKey,
+                            JSON.stringify(product),
+                            { EX: 60 }
+                        );
+                    } catch (error) {
+                        console.error(
+                            "Redis write failed:",
+                         
+                        );
+                    }
+                }
+
+                return product;
+            } finally {
+                inFlightRequests.delete(cacheKey);
+            }
+        })();
+
+        inFlightRequests.set(cacheKey, productPromise);
+    } else {
+        console.log("JOINING IN-FLIGHT REQUEST:", cacheKey);
+    }
+
+    try {
+        const product = await productPromise;
+
+        if (!product) {
+            return res.status(404).json({
+                message: "Product not found"
+            });
+        }
 
         return res.status(200).json({
-            source: "redis",
-            data: JSON.parse(cachedProduct)
+            source: "postgresql",
+            data: product
+        });
+    } catch (error) {
+        console.error("Product lookup failed:");
+
+        return res.status(500).json({
+            message: "Unable to retrieve product"
         });
     }
-
-    console.log(
-        cachedProduct === null
-            ? "CACHE MISS:" + cacheKey
-            : "CACHE UNAVAILABLE: using PostgreSQL"
-    );
-
-    
-
-
-   
-
-    
-
-let productPromise = inFlightRequests.get(cacheKey);
-
-if (!productPromise) {
-    productPromise = (async () => {
-        try {
-            // Recheck Redis in case another request populated it
-            const cachedAgain = await redisClient.get(cacheKey);
-
-            if (cachedAgain) {
-                console.log("CACHE HIT AFTER WAIT:", cacheKey);
-                return JSON.parse(cachedAgain);
-            }
-
-            console.log("DATABASE HIT:", productId);
-
-            const result = await pool.query(
-                "SELECT * FROM product WHERE id = $1",
-                [productId]
-            );
-
-            if (result.rows.length === 0) {
-                return null;
-            }
-
-            const product = result.rows[0];
-
-            try {
-                await redisClient.set(
-                    cacheKey,
-                    JSON.stringify(product),
-                    { EX: 60 }
-                );
-            } catch (error) {
-                console.error("Redis write failed:", error.message);
-            }
-
-            return product;
-        } finally {
-            inFlightRequests.delete(cacheKey);
-        }
-    })();
-
-    inFlightRequests.set(cacheKey, productPromise);
-} else {
-    console.log("JOINING IN-FLIGHT REQUEST:", cacheKey);
-}
-
-const product = await productPromise;
-
-if (!product) {
-    return res.status(404).json({
-        message: "Product not found"
-    });
-}
-
-return res.status(200).json({
-    source: "postgresql",
-    data: product
-});
-
-
-
-
-
 });
 
 

@@ -56,7 +56,6 @@ async function startServer() {
     } catch (error) {
         console.error(
             "Redis unavailable. Starting without cache:",
-            error.message
         );
     }
 
@@ -67,5 +66,5 @@ async function startServer() {
 
 startServer();
 
-startServer()
+
 
