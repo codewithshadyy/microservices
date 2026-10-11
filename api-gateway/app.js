@@ -4,15 +4,18 @@ const express = require("express")
 const app = express()
 const proxy = require("express-http-proxy")
 const {auth} = require("./middlewares/auth")
+const {rateLimiter} = require("./middleware/rateLimiter")
 
 const getNextProductService  = require("./services/products")
 
 const {connectRedis, redisClient} = require("./config/redis")
 
 const PORT=3001
+require("dotenv").config()
 
 app.use(express.json())
-require("dotenv").config()
+app.use(rateLimiter)
+
 
 
 

@@ -11,7 +11,7 @@ exports.rateLimiter = rateLimit({
     standardHeaders:"draft-8",
     legacyHeaders:false,
 
-    store:await RedisStore({
+    store: new RedisStore({
      sendCommand: (...args) => redisClient.sendCommand(args),
         prefix: "rate-limit:"
     }),
