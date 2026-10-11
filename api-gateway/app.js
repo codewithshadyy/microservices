@@ -7,6 +7,8 @@ const {auth} = require("./middlewares/auth")
 
 const getNextProductService  = require("./services/products")
 
+const {connectRedis, redisClient} = require("./config/redis")
+
 const PORT=3001
 
 app.use(express.json())
@@ -71,6 +73,13 @@ app.use("/customers", auth, proxy('http://localhost:3004',
 
 
 
-app.listen(PORT, () =>{
+async function startServer(params) {
+    await connectRedis()
+    app.listen(PORT, () =>{
     console.log(`http://localhost:${PORT}`)
 })
+    
+}
+
+startServer()
+
