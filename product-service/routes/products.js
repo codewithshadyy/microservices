@@ -248,5 +248,25 @@ app.put("/:id", async (req,res) => {
 
 
 
+app.get("/debug/db-pool", async (req, res) => {
+
+    try {
+        await pool.query("SELECT 1")
+
+        return res.status(200).json({
+              totalConnections: pool.totalCount,
+            idleConnections: pool.idleCount,
+            waitingRequests: pool.waitingCount
+        })
+        
+    } catch (error) {
+
+        return res.status(500).json(error)
+        
+    }
+    
+})
+
+
 
 module.exports  =app
