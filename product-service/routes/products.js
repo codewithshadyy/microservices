@@ -8,6 +8,8 @@ const {redisClient} = require("../config/redis")
 
 
 const inFlightRequests = new Map()
+const orders = []
+const idempotentRequests = new Map()
 
 
 
@@ -264,6 +266,52 @@ app.get("/debug/db-pool", async (req, res) => {
         return res.status(500).json(error)
         
     }
+    
+})
+
+
+app.post("/order", async (req, res) => {
+
+    const key = req.get("Idempotency-Key")
+
+    if(!key){
+        return res.status(400).json({
+            success:false,
+            message:"idempotency key is required"
+        })
+    }
+    const existingResult = idempotentRequests.get(key)
+
+    if(existingResult){
+        return res.status(existingResult.statusCode).json({
+            ...existingResult.body,
+            idempotentReplay:true
+        })
+    }
+
+    const order = {
+    id: orders.length + 1,
+    customerId: req.body.customerId,
+    items: req.body.items,
+    status: "created"
+  }
+
+  orders.push(order)
+
+    const responseBody = {
+    success: true,
+    data: order
+  }
+
+   idempotentRequests.set(key, {
+    statusCode: 201,
+    body: responseBody
+  })
+
+   return res.status(201).json({
+    ...responseBody,
+    idempotentReplay: false
+  })
     
 })
 
