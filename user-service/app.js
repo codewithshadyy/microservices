@@ -3,7 +3,6 @@
 const express =require("express")
 const app = express()
 const mongoose = require("mongoose")
-const router = require("./routes/owners")
 
 require("dotenv").config()
 
