@@ -4,7 +4,7 @@ const express = require("express")
 const { Timestamp } = require("mongodb")
 const mongoose = require("mongoose")
 
-const ownerSchema =new mongoose({
+const ownerSchema =new mongoose.Schema({
     username:{
         type:String,
         required:true
@@ -20,6 +20,6 @@ const ownerSchema =new mongoose({
         type:true,
         required:true
     }
-}, {Timestamp:true})
+}, {timestamps:true})
 
-exports.owner = mongoose.model('owner', ownerSchema)
+exports.Owner = mongoose.model("owner", ownerSchema)
