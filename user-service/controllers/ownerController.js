@@ -17,13 +17,20 @@ exports.register = async (req,res) => {
             })
         }
 
-        const ownerExists =   await Owner.find({username, email})
+        const ownerExists =   await Owner.findOne({
+            $or:[
+                {username:username},
+                {email:email}
+            ]
+        })
 
-        if(ownerExists){
-            return res.status(400).json({
-                success:false,
-                message:"Sorry ownership taken"
-            })
+        if (ownerExists) {
+            if (ownerExists.username === username) {
+                return res.status(400).json({ message: 'Username is already taken.' });
+            }
+            if (ownerExists.email === email) {
+                return res.status(400).json({ message: 'Email is already registered.' });
+            }
         }
 
         const hashedPassword = await brcypt.hash(password, 10)
@@ -44,6 +51,8 @@ exports.register = async (req,res) => {
         
         
     } catch (error) {
+
+        console.error(error.message)
 
         return res.status(500).json({
             success:false,

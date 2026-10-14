@@ -17,7 +17,7 @@ const ownerSchema =new mongoose.Schema({
     },
 
     password:{
-        type:true,
+        type:String,
         required:true
     }
 }, {timestamps:true})
